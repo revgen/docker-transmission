@@ -98,7 +98,7 @@ After that you have an ability to open transmission web ui on the http://<server
 ```bash
 cd docker-transmission
 docker build -t rev9en/transmission ./
-docker tar rev9en/transmission:latest rev9en/transmission:<new version>
+docker tag rev9en/transmission:latest rev9en/transmission:<new version>
 ```
 
 ### Publish new docker image to the docker hub
