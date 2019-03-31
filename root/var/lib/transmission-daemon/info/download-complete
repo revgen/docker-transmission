@@ -1,0 +1,37 @@
+#!/bin/sh
+#-----------------------------------------------------------------------------
+# Special script for transmission.
+# This script will be executed automatically on every download complete event
+# from the transmission service.
+#
+# You can use system environment inside this script
+# (https://trac.transmissionbt.com/wiki/Scripts):
+#   TR_TIME_LOCALTIME
+#   TR_APP_VERSION
+#   TR_TORRENT_ID
+#   TR_TORRENT_NAME
+#   TR_TORRENT_DIR
+#   TR_TORRENT_HASH
+#
+# You can use a script 'transmission-control' to manage/communicate with the
+# transmission inside the docker container. It is a wrapper with credentials
+# for the transmission-remote tool.
+# Example:
+#   transmission-control --list   - show a list of all torrents
+#   transmission-control -s 1     - start torrent with ID=1
+#-----------------------------------------------------------------------------
+log() {
+    msg=${1}
+    echo "[$(date +"%Y-%m-%d %H:%M:%S.000")] DOWNLOAD COMPLETE: ${msg}" >> /config/transmission.log
+}
+#-----------------------------------------------------------------------------
+
+size=$(du -hd 0 "${TR_TORRENT_DIR}/${TR_TORRENT_NAME}"  | cut -f1)
+log "[${TR_TORRENT_ID}] ${TR_TORRENT_DIR}/${TR_TORRENT_NAME} (${size})"
+
+# Remove downloaded torrent from the list
+#transmission-control -t ${TR_TORRENT_ID} -r && log "[${TR_TORRENT_ID}] ${TR_TORRENT_DIR}/${TR_TORRENT_NAME} - Removed from the list"
+
+# Send email with information about downloaded torrent
+#echo "Torrent [${TR_TORRENT_ID}]: ${TR_TORRENT_NAME}" | sendmail -s "Transmission download complete" | sendmail -v admin@server.com
+

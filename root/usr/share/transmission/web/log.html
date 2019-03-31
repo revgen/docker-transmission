@@ -1,0 +1,18 @@
+<html>
+<body>
+<div style="font-family: monospace; font-size: 12px;"><pre id="content">Loading...</pre></div>
+<script>
+function populatePre(url) {
+    document.getElementById('content').innerHTML = 'Loading log...';
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+        document.getElementById('content').innerHTML = this.responseText;
+    };
+    xhr.open('GET', url + '?' + (new Date()).getTime());
+    xhr.send();
+}
+populatePre('./transmission.log');
+</script>
+</body>
+</html>
+

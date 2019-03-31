@@ -1,0 +1,130 @@
+#!/bin/bash
+#=============================================================================
+## Helper script to control Transmission docker container.
+## Usage: {SCRIPT_NAME} <start|stop|create|remove|logs|info|shell>
+#
+#  Author  : Evgen Rusakov
+#  Version : 1.0.0
+#  Url     : https://github.com/revgen/docker-transmission
+#
+## Environment variables:
+##   TRANSMISSION_CONFIG_DIR      - directory where transmission configuration located
+##   TRANSMISSION_DOWNLOAD_DIR    - directory where result downloaded files will be located
+##   TRANSMISSION_INCOMPLETE_DIR  - directory to keep files in until torrent is complete
+##   TRANSMISSION_WATCH_DIR       - directory with torrents files which will be added automaticaly
+##   TRANSMISSION_PORT            - web access http port (default: 9091)
+##   TRANSMISSION_USERNAME        - web access username (default: transmission)
+##   TRANSMISSION_PASSWORD        - web access password (default: transmission)
+#=============================================================================
+# Show help screen based on the commented text at the top of the currect script
+show_help() {
+    sed -n '/^##/,/^$/s/^## \{0,1\}//p' "$0" | sed 's/{SCRIPT_NAME}/'"$(basename "${0}")"'/g'
+    exit 255
+}
+
+#-----------------------------------------------------------------------------
+# PARAMETERS
+IMAGE=${IMAGE:-"rev9en/transmission"}
+VERSION=${VERSION:-"latest"}
+NAME=${NAME:-"$(basename "${IMAGE}")"}
+
+CONFIG_DIR=${TRANSMISSION_CONFIG_DIR:-"${HOME}/.docker/shared/transmission/config"}
+DOWNLOAD_DIR=${TRANSMISSION_DOWNLOAD_DIR:-"${HOME}/Downloads"}
+INCOMPLETE_DIR=${TRANSMISSION_INCOMPLETE_DIR:-"${DOWNLOAD_DIR}/.incomplete"}
+WATCH_DIR=${TRANSMISSION_WATCH_DIR:-"${HOME}/.docker/shared/transmission/watch"}
+# Using your current user default group ID inside the docker container
+PGID=${TRANSMISSION_GID:-"$(id -G | cut -d" " -f1)"}
+# Using your current user ID inside the docker container
+PUID=${TRANSMISSION_UID:-${UID}}
+# Http port to the Transmission web UI
+PORT=${TRANSMISSION_PORT:-"9091"}
+# Transmission Web UI credentials: username and password
+USERNAME=${TRANSMISSION_USERNAME:-"transmission"}
+PASSWORD=${TRANSMISSION_PASSWORD:-"transmission"}
+
+#-----------------------------------------------------------------------------
+# Special directory for the container will be created
+create_directories() {
+    mkdir -p "${CONFIG_DIR}" "${DOWNLOAD_DIR}" "${INCOMPLETE_DIR}" "${WATCH_DIR}"
+    chown ${PUID}:${PGID} "${CONFIG_DIR}" "${DOWNLOAD_DIR}" "${INCOMPLETE_DIR}" "${WATCH_DIR}"
+    chmod 0775 "${CONFIG_DIR}" "${DOWNLOAD_DIR}" "${INCOMPLETE_DIR}" "${WATCH_DIR}"
+}
+#-----------------------------------------------------------------------------
+create_container() {
+    create_directories
+    # get current timezone: linux and os x version or UTC
+    TZ=$(ls -l /etc/localtime | awk -F"zoneinfo/" '{print $2}' 2>/dev/null || echo "UTC")
+    docker create --name="${NAME}" --restart=always \
+        -v "${CONFIG_DIR}":/config \
+        -v "${DOWNLOAD_DIR}":/downloads \
+        -v "${INCOMPLETE_DIR}":/incomplete \
+        -v "${WATCH_DIR}":/watch \
+        -e PGID=${PGID} -e PUID=${PUID} \
+        -e TZ=${TZ} \
+        -e PASSWORD=${PASSWORD} \
+        -e USERNAME=${USERNAME} \
+        -p ${PORT}:9091 -p 51413:51413 -p 51413:51413/udp \
+        "${IMAGE}:${VERSION}" && \
+    echo "Container '${NAME}' created successfully (from image: ${IMAGE}:${VERSION})."
+}
+
+#-----------------------------------------------------------------------------
+start_container() {
+    create_directories
+    echo "Starting '${NAME}' container..."
+    docker start "${NAME}" && echo "Started '${NAME} - successfully"
+}
+
+#-----------------------------------------------------------------------------
+stop_container() {
+    echo "Stopping '${NAME}' container ..."
+    docker stop "${NAME}" && echo "Stopped '${NAME}' - successfully"
+}
+
+#-----------------------------------------------------------------------------
+remove_container() {
+    stop_container
+    echo "Removing '${NAME}' container..."
+    docker rm "${NAME}" 2>/dev/null
+    echo "Done"
+}
+
+#-----------------------------------------------------------------------------
+# Show main information about a contaier
+status_container() {
+    img=$(docker images "${IMAGE}" --format "{{.Repository}}:{{.Tag}}")
+    if [ -n "${img}" ]; then echo "    Image: ${img}";
+    else echo "    Image: Error - Image '${NAME}' not found"; fi
+    id=$(docker ps --filter name=${NAME} --format "{{.ID}}")
+    echo "Container: ${NAME}"
+    if [ -n "${id}" ]; then
+        ports=$(docker ps --filter name="${NAME}" --format "{{.Ports}}")
+        status=$(docker ps --filter name="${NAME}" --format "{{.Status}}")
+        mounts=$(docker inspect --format="{{range .Mounts }}{{.Source}} -> {{.Destination}},{{end}}" "${NAME}" | tr -s ',' '; ')
+        started=$(docker inspect --format='{{.State.StartedAt}}' "${NAME}")
+        echo "*  Status: ${status}"
+        echo "* Started: ${started}"
+        echo "*      ID: ${id}"
+        echo "*   Ports: ${ports}"
+        echo "*  Mounts: ${mounts}"
+        return 0
+    else
+        echo "*  Status: stopped or not exists"   
+        return 1
+    fi    
+}
+
+#-----------------------------------------------------------------------------
+# Parse command line and handle a command
+case "${1:-"help"}" in
+    create|C)       shift; create_container $@ ;;
+    delete|remove)  shift; remove_container $@ ;;
+    start|s)        shift; start_container $@ ;;
+    stop|S)         shift; stop_container $@ ;;
+    shell|sh)       shift; docker exec -it "${NAME}" ${1:-"/bin/sh"} ;;
+    log|logs|l)     shift; docker logs "${NAME}" $@ ;;
+    status|st)      shift; status_container $@ ;;
+    info|I)         shift; status_container $@ ;;
+    help|h|H)       show_help ;;
+    *) echo "Error: Unknow command '${1}'."; show_help ;;
+esac
