@@ -90,7 +90,9 @@ location /transmission/upload {
 sudo service nginx restart 
 ```
 
-After that you have an ability to open transmission web ui on the http://<servername>/transmission.
+After that you have an ability to open transmission web ui on the http://servername/transmission.
+
+Transmission output logs can be found here: https://servername/transmission/web/log.html.
 
 ## Development
 
