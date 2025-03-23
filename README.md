@@ -109,7 +109,7 @@ make publish
 ```
 
 
-[transmission-helper-script]: https://raw.githubusercontent.com/revgen/docker-transmission/master/scripts/transmission
+[transmission-helper-script]: https://raw.githubusercontent.com/revgen/docker-transmission/master/transmission
 [transmission-site]: https://transmissionbt.com/
 [alpine-site]: https://hub.docker.com/_/alpine/
 [transmission-hub]: https://hub.docker.com/r/rev9en/transmission/
