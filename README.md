@@ -1,6 +1,6 @@
 # [docker-transmission][github-repo]
 
-[![Build Docker Image](https://github.com/revgen/docker-transmission/actions/workflows/docker.yml/badge.svg)](https://github.com/revgen/docker-trasmission/actions/workflows/docker.yml)
+[![Build Docker Image](https://github.com/revgen/docker-transmission/actions/workflows/docker.yml/badge.svg)][transmission-hub]
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Docker image based on [Alpine Linux][alpine-site] with [transmission-daemon][transmission-site].
