@@ -4,7 +4,6 @@ ARG NAME="rev9en/transmission"
 ARG VERSION="1.0.3"
 
 LABEL version="${VERSION}"
-LABEL name="${NAME}"
 LABEL description="Docker image with transmission-daemon"
 LABEL date="2018-03-14"
 LABEL maintainer="Evgen Rusakov"
